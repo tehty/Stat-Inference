@@ -1,0 +1,96 @@
+---
+title: 'Statistical Inference Project, Part 2: Basic Inferential Data Analysis'
+author: 'Tehty'
+date: "Jul 23, 2015"
+output: pdf_document
+---
+## Overview
+
+In this second portion of the assignment, we're going to analyze the ToothGrowth data in the R datasets package.
+
+Steps:
+
+1.  Load the ToothGrowth data and perform some basic exploratory data analyses 
+2.	Provide a basic summary of the data.
+3.	Use confidence intervals and/or hypothesis tests to compare tooth growth by supp and dose. 
+4.	Conclusions and the assumptions  
+
+The `ToothGrowth` data set consists of 60 observations of 3 variables:
+
+* `len` (numeric)
+* `supp` (VC or OJ)
+* `dose` (numeric)
+
+```{r}
+library(datasets)
+head(ToothGrowth)
+summary (ToothGrowth)
+
+library(ggplot2)
+ggplot(ToothGrowth, aes(x=as.factor(dose), y=len, fill=supp)) +
+  geom_bar(stat="identity",) +
+  facet_grid(. ~ supp) +  
+  labs(x ="Dose", y="Tooth Length")+ 
+  guides(fill=guide_legend(title="Supplement type"))
+
+```
+
+As per the histogram above, it is a clear positive correlation between the tooth length and the dose levels.
+
+```{r}
+graph <- ggplot(ToothGrowth, aes(x=as.factor(dose), y=len)) 
+graph + geom_point(aes(color=supp), size = 4, alpha = 1/2) + labs(title = "Tooth Growth") + labs(x ="Dose", y="Tooth Length") 
+
+```
+
+From above results, we can identify below
+
+1. Tooth length with VC supplement has wider distribution than those with OJ supplement
+2. Teeth are longer with OJ than those with VC at the dose 0.5 and 1.0 level
+3. The larger the dose, the longer the tooth.
+
+
+Now, let us examing the variance in tooth length in relation of the supplement type.
+
+```{r}
+fitting <- lm(len ~ dose + supp, ToothGrowth)
+summary(fitting)
+```
+Assumption: All else equal
+
+The intercept is `r fitting$coefficients[[1]]`, means that with no supplement of
+Vitamin C, the average tooth length is `r fitting$coefficients[[1]]`. 
+
+The coefficient of `dose` is `r fitting$coefficients[[2]]`. When increasing dose 1 mg, would increase the tooth length of `r fitting$coefficients[[2]]` 
+
+The last coefficient `suppVC` with the value is `r fitting$coefficients[[3]]` explains that a given dose of VC, would result in decrease of `r abs(fitting$coefficients[[3]])` in the tooth length. 
+
+Confidence intervals for these two variables and the intercept as below
+```{r}
+confint(fitting)
+```
+
+For each coefficient (the intercept, `dose` and `suppVC`), the null hypothesis is where the coefficent is 'zero' - means that no tooth length variation is explained by that variable.
+
+All _p_-values are less than 0.05, rejecting the null hypothesis and suggesting
+that each variable explains a significant portion of variability in tooth length,
+with the assumption of 5% of significance level.
+
+Hypothesis Test
+
+Cosidering there are three levels of dose (0.5, 1.0, 2.0), we perform t test in following orders: (1) dose 0.5 vs. dose 1.0; (2) dose 1.0 vs. dose 2.0; and (3) dose 0.5 vs. dose 2.0.
+
+```{r}
+
+t.test(ToothGrowth$len[ToothGrowth$dose == 1.0], ToothGrowth$len[ToothGrowth$dose == 0.5], paired = FALSE, var.equal = TRUE)$conf
+
+t.test(ToothGrowth$len[ToothGrowth$dose == 2.0], ToothGrowth$len[ToothGrowth$dose == 1.0], paired = FALSE, var.equal = TRUE)$conf
+
+t.test(ToothGrowth$len[ToothGrowth$dose == 2.0], ToothGrowth$len[ToothGrowth$dose == 0.5], paired = FALSE, var.equal = TRUE)$conf
+
+```
+
+Conclusion
+
+From the result, the confidence intervals for three comparisons are all above zero, therefore, we can conclude that the larger the supp dose, the longer the tooth.
+
